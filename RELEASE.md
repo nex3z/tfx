@@ -8,6 +8,8 @@
 ## Bug fixes and other changes
 *   Fix the behavior of Trainer Tensorboard visualization when caching is used.
 *   Added component documentation and guide on using TFLite in TFX.
+*   Replaced relative import with absolute import in generated templates.
+*   Added a native keras model in the taxi template.
 
 ### Deprecations
 *   Model Validator (its functionality is now provided by the Evaluator).

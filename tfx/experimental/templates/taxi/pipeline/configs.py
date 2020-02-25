@@ -19,8 +19,6 @@ This file defines environments for a TFX taxi pipeline.
 
 import os  # pylint: disable=unused-import
 
-from tfx.proto import trainer_pb2
-
 # TODO(b/149347293): Move more TFX CLI flags into python configuration.
 
 # Pipeline name will be used to identify this pipeline.
@@ -40,11 +38,16 @@ GCS_BUCKET_NAME = 'YOUR_GCS_BUCKET_NAME'
 # GCP_PROJECT_ID = 'YOUR_GCP_PROJECT_ID'
 # GCP_REGION = 'YOUR_GCP_REGION'  # ex) 'us-central1'
 
-PREPROCESSING_FN = 'preprocessing.preprocessing_fn'
-TRAINER_FN = 'model.trainer_fn'
+PREPROCESSING_FN = 'models.preprocessing.preprocessing_fn'
+TRAINER_FN = 'models.keras.model.run_fn'
+# NOTE: Uncomment below to use an estimator based model.
+# TRAINER_FN = 'models.estimator.model.trainer_fn'
 
-TRAIN_ARGS = trainer_pb2.TrainArgs(num_steps=100)
-EVAL_ARGS = trainer_pb2.EvalArgs(num_steps=100)
+TRAIN_NUM_STEPS = 100
+EVAL_NUM_STEPS = 100
+
+# Change this value according to your use cases.
+EVAL_ACCURACY_THRESHOLD = 0.6
 
 # Beam args to use BigQueryExampleGen.
 # TODO(step 7): (Optional) Uncomment here to provide GCP related configs for
