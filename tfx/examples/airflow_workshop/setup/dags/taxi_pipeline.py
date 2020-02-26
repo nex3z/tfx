@@ -1,5 +1,5 @@
 # Lint as: python2, python3
-# Copyright 2020 Google LLC. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,18 +12,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=line-too-long
-# pylint: disable=unused-argument
 """Chicago taxi example using TFX."""
+
+# pylint: disable=unused-argument
+# pylint: disable=unused-import
+# pylint: disable=g-bad-import-order
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 import datetime
+import logging
 import os
 from typing import Text
+
 from tfx.components import CsvExampleGen
+from tfx.orchestration import metadata
+from tfx.orchestration import pipeline
 
 # from tfx.components import StatisticsGen # Step 3
 # from tfx.components import SchemaGen # Step 3
@@ -37,14 +43,11 @@ from tfx.components import CsvExampleGen
 # from tfx.proto import evaluator_pb2 # Step 6
 # from tfx.components import Evaluator # Step 6
 
-# from tfx.components import ModelValidator # Step 7
 # from tfx.proto import pusher_pb2 # Step 7
+# from tfx.components import ModelValidator # Step 7
 # from tfx.components import Pusher # Step 7
 
-from tfx.orchestration import metadata
-from tfx.orchestration import pipeline
 from tfx.orchestration.airflow.airflow_dag_runner import AirflowDagRunner
-from tfx.orchestration.airflow.airflow_dag_runner import AirflowPipelineConfig
 from tfx.utils.dsl_utils import external_input
 
 _pipeline_name = 'taxi'
@@ -88,7 +91,9 @@ def _create_pipeline(pipeline_name: Text, pipeline_root: Text, data_root: Text,
   example_gen = CsvExampleGen(input=examples)
 
   # Computes statistics over data for visualization and example validation.
+  # pylint: disable=line-too-long
   # statistics_gen = StatisticsGen(examples=example_gen.outputs['examples']) # Step 3
+  # pylint: enable=line-too-long
 
   # Generates schema based on statistics files.
   # infer_schema = SchemaGen( # Step 3
@@ -98,7 +103,7 @@ def _create_pipeline(pipeline_name: Text, pipeline_root: Text, data_root: Text,
   # Performs anomaly detection based on statistics and data schema.
   # validate_stats = ExampleValidator( # Step 3
   #     statistics=statistics_gen.outputs['statistics'], # Step 3
-  #     schema=infer_schema.outputs['schema']) # Step 3
+  #           schema=infer_schema.outputs['schema']) # Step 3
 
   # Performs transformations and feature engineering in training and serving.
   # transform = Transform( # Step 4
@@ -126,7 +131,8 @@ def _create_pipeline(pipeline_name: Text, pipeline_root: Text, data_root: Text,
 
   # Performs quality validation of a candidate model (compared to a baseline).
   # model_validator = ModelValidator( # Step 7
-  #     examples=example_gen.outputs['examples'], model=trainer.outputs['model']) # Step 7
+  #     examples=example_gen.outputs['examples'], # Step 7
+  #              model=trainer.outputs['model']) # Step 7
 
   # Checks whether the model passed the validation steps and pushes the model
   # to a file destination if check passed.
@@ -135,11 +141,11 @@ def _create_pipeline(pipeline_name: Text, pipeline_root: Text, data_root: Text,
   #     model_blessing=model_validator.outputs['blessing'], # Step 7
   #     push_destination=pusher_pb2.PushDestination( # Step 7
   #         filesystem=pusher_pb2.PushDestination.Filesystem( # Step 7
-  #             base_directory=serving_model_dir))) # Step 7
+  #             base_directory=_serving_model_dir))) # Step 7
 
   return pipeline.Pipeline(
-      pipeline_name=pipeline_name,
-      pipeline_root=pipeline_root,
+      pipeline_name=_pipeline_name,
+      pipeline_root=_pipeline_root,
       components=[
           example_gen,
           # statistics_gen, infer_schema, validate_stats, # Step 3
@@ -151,11 +157,12 @@ def _create_pipeline(pipeline_name: Text, pipeline_root: Text, data_root: Text,
       enable_cache=True,
       metadata_connection_config=metadata.sqlite_metadata_connection_config(
           metadata_path),
-      beam_pipeline_args=['--direct_num_workers=%d' % direct_num_workers])
+      beam_pipeline_args=['--direct_num_workers=%d' % direct_num_workers]
+  )
 
 
 # 'DAG' below need to be kept for Airflow to detect dag.
-DAG = AirflowDagRunner(AirflowPipelineConfig(_airflow_config)).run(
+DAG = AirflowDagRunner(_airflow_config).run(
     _create_pipeline(
         pipeline_name=_pipeline_name,
         pipeline_root=_pipeline_root,

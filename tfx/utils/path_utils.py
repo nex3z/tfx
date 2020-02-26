@@ -20,14 +20,19 @@ from __future__ import print_function
 
 import os
 import time
-from typing import Text
+from typing import List, Text
 
-import tensorflow as tf
-
-from tfx.utils import io_utils
+from tfx.utils.model_paths import tf_estimator_exporter_flavor
+from tfx.utils.model_paths import tfma_eval_saved_model_flavor
 
 EVAL_MODEL_DIR = 'eval_model_dir'
 SERVING_MODEL_DIR = 'serving_model_dir'
+
+
+def _only_path(paths: List[Text]) -> Text:
+  assert len(paths) == 1
+  return paths[0]
+
 
 # TODO(b/127149760): simplify this PPP-esque structure.
 #
@@ -60,11 +65,12 @@ def eval_model_dir(output_uri: Text) -> Text:
 def eval_model_path(output_uri: Text) -> Text:
   """Returns path to timestamped exported model for evaluation purpose."""
   model_dir = eval_model_dir(output_uri)
-  if tf.io.gfile.exists(model_dir):
-    return io_utils.get_only_uri_in_dir(model_dir)
-  else:
+  paths = tfma_eval_saved_model_flavor.lookup_model_paths(
+      export_dir_base=model_dir)
+  if not paths:
     # If eval model doesn't exist, use serving model for eval.
-    return serving_model_dir(output_uri)
+    return serving_model_path(output_uri)
+  return _only_path(paths)
 
 
 def serving_model_dir(output_uri: Text) -> Text:
@@ -74,13 +80,12 @@ def serving_model_dir(output_uri: Text) -> Text:
 
 def serving_model_path(output_uri: Text) -> Text:
   """Returns path for timestamped and named serving model exported."""
-  export_dir = os.path.join(serving_model_dir(output_uri), 'export')
-  if tf.io.gfile.exists(export_dir):
-    model_dir = io_utils.get_only_uri_in_dir(export_dir)
-    return io_utils.get_only_uri_in_dir(model_dir)
-  else:
+  model_dir = serving_model_dir(output_uri)
+  paths = tf_estimator_exporter_flavor.lookup_model_paths(export_path=model_dir)
+  if not paths:
     # If dir doesn't match estimator structure, use serving model root directly.
-    return serving_model_dir(output_uri)
+    return model_dir
+  return _only_path(paths)
 
 
 def get_serving_model_version(output_uri: Text) -> Text:
