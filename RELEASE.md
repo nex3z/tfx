@@ -33,7 +33,6 @@
 *   Added a Chicago Taxi example with native Keras.
 *   Updated TFLite converter to work with TF2.
 *   Enabled filtering by artifact producer and output key in ResolverNode.
-*   Changed Iris model_to_estimator e2e example to use generic Trainer.
 
 ## Bug fixes and other changes
 *   Added --skaffold_cmd flag when updating a pipeline for kubeflow in CLI.
@@ -153,9 +152,6 @@
 *   The ImporterNode now allows specification of general artifact properties.
 *   Added 'tfx_executor', 'tfx_version' and 'tfx_py_version' labels for CAIP,
     BQML and Dataflow jobs submitted from TFX components.
-*   Use '_' instead of '/' in feature names of several examples to avoid
-    potential clash with namescope separator.
-
 
 ### Deprecations
 
