@@ -39,15 +39,20 @@ GCS_BUCKET_NAME = 'YOUR_GCS_BUCKET_NAME'
 # GCP_REGION = 'YOUR_GCP_REGION'  # ex) 'us-central1'
 
 PREPROCESSING_FN = 'models.preprocessing.preprocessing_fn'
-TRAINER_FN = 'models.estimator.model.trainer_fn'
+TRAINER_FN = 'models.keras.model.run_fn'
+# NOTE: Uncomment below to use an estimator based model.
+# TRAINER_FN = 'models.estimator.model.trainer_fn'
 
 TRAIN_NUM_STEPS = 100
 EVAL_NUM_STEPS = 100
 
-# Beam args to use BigQueryExampleGen.
+# Change this value according to your use cases.
+EVAL_ACCURACY_THRESHOLD = 0.6
+
+# Beam args to use BigQueryExampleGen with Beam DirectRunner.
 # TODO(step 7): (Optional) Uncomment here to provide GCP related configs for
 #               BigQuery.
-# BIG_QUERY_BEAM_PIPELINE_ARGS = [
+# BIG_QUERY_WITH_DIRECT_RUNNER_BEAM_PIPELINE_ARGS = [
 #    '--project=' + GCP_PROJECT_ID,
 #    ]
 
@@ -90,7 +95,7 @@ _query_sample_rate = 0.0001  # Generate a 0.01% random sample.
 # TODO(b/151114974): Remove `disk_size_gb` flag after default is increased.
 # TODO(b/151116587): Remove `shuffle_mode` flag after default is changed.
 # TODO(step 8): (Optional) Uncomment below to use Dataflow.
-# BEAM_PIPELINE_ARGS = [
+# DATAFLOW_BEAM_PIPELINE_ARGS = [
 #    '--project=' + GCP_PROJECT_ID,
 #    '--runner=DataflowRunner',
 #    '--temp_location=' + os.path.join('gs://', GCS_BUCKET_NAME, 'tmp'),
