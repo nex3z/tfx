@@ -28,6 +28,7 @@ import six
 from tfx.components.infra_validator.model_server_clients import base_client
 from tfx.components.infra_validator.model_server_clients import tensorflow_serving_client
 from tfx.proto import infra_validator_pb2
+from tfx.utils.model_paths import tf_serving_flavor
 
 
 def parse_serving_binaries(  # pylint: disable=invalid-name
@@ -144,35 +145,23 @@ class TensorFlowServing(ServingBinary):
     return self._image
 
   def MakeEnvVars(
-      self, model_base_path: Optional[Text] = None) -> Dict[Text, Text]:
-    if model_base_path is None:
+      self, model_path: Optional[Text] = None) -> Dict[Text, Text]:
+    if model_path is None:
       model_base_path = self._DEFAULT_MODEL_BASE_PATH
+    else:
+      model_base_path = tf_serving_flavor.parse_model_base_path(model_path)
     return {
         'MODEL_NAME': self._model_name,
         'MODEL_BASE_PATH': model_base_path
     }
 
-  def MakeDockerRunParams(
-      self,
-      host_port: int,
-      model_base_path: Optional[Text] = None,
-      host_model_path: Optional[Text] = None
-  ):
+  def MakeDockerRunParams(self, host_port: int,
+                          model_path: Text) -> Dict[Text, Any]:
     """Make parameters for docker `client.containers.run`.
 
     Args:
       host_port: Available port in the host to bind with container port.
-      model_base_path: (Optional) Model base path for the tensorflow serving.
-          If the model is exported to the remote destination, you should specify
-          its location (e.g. `gs://your_bucket/model_base_path`) and gfile will
-          recognize it. If your model is in the local host machine, do not alter
-          `model_base_path` (i.e. use default value `/model`) and use
-          `host_model_path` argument to configure a volume mount from a host
-          machine to the container.
-      host_model_path: (Optional) host path for exported model. Use this only if
-          you have an exported SavedModel in the local host machine. Using this
-          option will create a volume mount from `host_model_path` to the
-          `{model_base_path}/{model_name}`.
+      model_path: A path to the model.
 
     Returns:
       A dictionary of docker run parameters.
@@ -182,20 +171,27 @@ class TensorFlowServing(ServingBinary):
         image=self._image,
         ports={
             '{}/tcp'.format(self.container_port): host_port
-        },
-        environment=self.MakeEnvVars(model_base_path=model_base_path))
+        })
 
-    if host_model_path is not None:
-      # TODO(b/149534564): Replace os.path to pathlib.PurePosixPath after py3.
-      result.update(mounts=[
-          docker_types.Mount(
-              type='bind',
-              target=os.path.join(
-                  model_base_path or self._DEFAULT_MODEL_BASE_PATH,
-                  self._model_name),
-              source=host_model_path,
-              read_only=True)
-      ])
+    if os.path.isdir(model_path):
+      # model_path is a local directory. In order to let TF Serving container
+      # see the model path, we need to mount the volume.
+      host_model_base_path = tf_serving_flavor.parse_model_base_path(model_path)
+      result.update(
+          environment=self.MakeEnvVars(),
+          mounts=[
+              docker_types.Mount(
+                  type='bind',
+                  target=self._DEFAULT_MODEL_BASE_PATH,
+                  source=host_model_base_path,
+                  read_only=True)
+          ])
+    else:
+      # model_path is presumably a remote URI. TF Serving is able to pickup
+      # model in remote directly using gfile, so all we need to do is setting
+      # environment variables correctly.
+      result.update(
+          environment=self.MakeEnvVars(model_path=model_path))
 
     return result
 
