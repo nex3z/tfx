@@ -3,7 +3,6 @@
 ## Major Features and Improvements
 
 ## Bug fixes and other changes
-*   Replaced relative import with absolute import in generated templates.
 
 ### Deprecations
 

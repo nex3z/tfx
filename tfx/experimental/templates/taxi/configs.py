@@ -19,6 +19,8 @@ This file defines environments for a TFX taxi pipeline.
 
 import os  # pylint: disable=unused-import
 
+from tfx.proto import trainer_pb2
+
 # TODO(b/149347293): Move more TFX CLI flags into python configuration.
 
 # Pipeline name will be used to identify this pipeline.
@@ -38,14 +40,11 @@ GCS_BUCKET_NAME = 'YOUR_GCS_BUCKET_NAME'
 # GCP_PROJECT_ID = 'YOUR_GCP_PROJECT_ID'
 # GCP_REGION = 'YOUR_GCP_REGION'  # ex) 'us-central1'
 
-PREPROCESSING_FN = 'models.preprocessing.preprocessing_fn'
-TRAINER_FN = 'models.estimator.model.trainer_fn'
+PREPROCESSING_FN = 'preprocessing.preprocessing_fn'
+TRAINER_FN = 'model.trainer_fn'
 
-TRAIN_NUM_STEPS = 100
-EVAL_NUM_STEPS = 100
-
-# Change this value according to your use cases.
-EVAL_ACCURACY_THRESHOLD = 0.6
+TRAIN_ARGS = trainer_pb2.TrainArgs(num_steps=100)
+EVAL_ARGS = trainer_pb2.EvalArgs(num_steps=100)
 
 # Beam args to use BigQueryExampleGen.
 # TODO(step 7): (Optional) Uncomment here to provide GCP related configs for
@@ -90,19 +89,13 @@ _query_sample_rate = 0.0001  # Generate a 0.01% random sample.
 #    query_sample_rate=_query_sample_rate)
 
 # Beam args to run data processing on DataflowRunner.
-# TODO(b/151114974): Remove `disk_size_gb` flag after default is increased.
-# TODO(b/151116587): Remove `shuffle_mode` flag after default is changed.
 # TODO(step 8): (Optional) Uncomment below to use Dataflow.
 # BEAM_PIPELINE_ARGS = [
 #    '--project=' + GCP_PROJECT_ID,
 #    '--runner=DataflowRunner',
+#    '--experiments=shuffle_mode=auto',
 #    '--temp_location=' + os.path.join('gs://', GCS_BUCKET_NAME, 'tmp'),
 #    '--region=' + GCP_REGION,
-#    # TODO(tensorflow/tfx#1461) Remove `shuffle_mode` after default is changed.  # pylint: disable=g-bad-todo
-#    '--experiments=shuffle_mode=auto',
-#    # TODO(tensorflow/tfx#1459) Remove `disk_size_gb` after default is
-#    #                           increased.  # pylint: disable=g-bad-todo
-#    '--disk_size_gb=50',
 #    ]
 
 # A dict which contains the training job parameters to be passed to Google

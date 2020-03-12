@@ -81,6 +81,16 @@ _DEFAULT_TRANSFORMED_EXAMPLES_PREFIX = 'transformed_examples'
 # TODO(b/125451545): Provide a safe temp path from base executor instead.
 _TEMP_DIR_IN_TRANSFORM_OUTPUT = '.temp_path'
 
+_TFXIO_HAS_TELEMETRY = False
+try:
+  # pylint: disable=g-import-not-at-top, unused-import
+  from tfx_bsl.tfxio import telemetry as _
+  _TFXIO_HAS_TELEMETRY = True
+except ImportError:
+  pass
+
+_TRANSFORM_COMPONENT_DESCRIPTOR = 'Transform'
+
 
 # TODO(b/122478841): Move it to a common place that is shared across components.
 class _Status(object):
@@ -1538,14 +1548,23 @@ class Executor(base_executor.BaseExecutor):
                    schema: schema_pb2.Schema) -> tfxio.TFXIO:
     """Creates a TFXIO instance for `dataset`."""
     if self._ShouldDecodeAsRawExample(dataset.data_format):
-      return raw_tf_record.RawTfRecordTFXIO(dataset.file_pattern,
-                                            RAW_EXAMPLE_KEY)
+      kwargs = {
+          'file_pattern': dataset.file_pattern,
+          'raw_record_column_name': RAW_EXAMPLE_KEY,
+      }
+      if _TFXIO_HAS_TELEMETRY:
+        kwargs['telemetry_descriptors'] = [_TRANSFORM_COMPONENT_DESCRIPTOR]
+      return raw_tf_record.RawTfRecordTFXIO(**kwargs)
     else:
-      return tf_example_record.TFExampleRecord(
-          dataset.file_pattern,
+      kwargs = {
+          'file_pattern': dataset.file_pattern,
           # TODO(b/114938612): Eventually remove this override.
-          validate=False,
-          schema=schema)
+          'validate': False,
+          'schema': schema
+      }
+      if _TFXIO_HAS_TELEMETRY:
+        kwargs['telemetry_descriptors'] = [_TRANSFORM_COMPONENT_DESCRIPTOR]
+      return tf_example_record.TFExampleRecord(**kwargs)
 
   def _AssertSameTFXIOSchema(self, datasets: Sequence[_Dataset]) -> None:
     if not datasets:
