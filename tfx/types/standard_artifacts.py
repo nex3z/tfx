@@ -21,6 +21,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import struct
 from typing import Text
 
 from tfx.types.artifact import Artifact
@@ -92,19 +93,52 @@ class Schema(Artifact):
   TYPE_NAME = 'Schema'
 
 
+class BytesType(ValueArtifact):
+  """Artifacts representing raw bytes."""
+  TYPE_NAME = 'BytesType'
+
+  def encode(self, value: bytes):
+    return value
+
+  def decode(self, serialized_value: bytes):
+    return serialized_value
+
+
 class StringType(ValueArtifact):
-  """String-typed Artifact."""
+  """String-typed artifact."""
   TYPE_NAME = 'StringType'
 
   # Note, currently we enforce unicode-encoded string.
-  def encode(self, value: Text):
+  def encode(self, value: Text) -> bytes:
     # TODO(jxzheng): Enforce value to be Text after dropping support of Py2.
     # likely after 0.21.2
     # assert isinstance(value, Text), value
     return value.encode('utf-8')
 
-  def decode(self, value: bytes):
-    return value.decode('utf-8')
+  def decode(self, serialized_value: bytes) -> Text:
+    return serialized_value.decode('utf-8')
+
+
+class IntegerType(ValueArtifact):
+  """Integer-typed artifact."""
+  TYPE_NAME = 'IntegerType'
+
+  def encode(self, value: int) -> bytes:
+    return struct.pack('>i', value)
+
+  def decode(self, serialized_value: bytes) -> int:
+    return struct.unpack('>i', serialized_value)[0]
+
+
+class FloatType(ValueArtifact):
+  """Float-typed artifact."""
+  TYPE_NAME = 'FloatType'
+
+  def encode(self, value: float) -> bytes:
+    return struct.pack('>f', value)
+
+  def decode(self, serialized_value: bytes) -> float:
+    return struct.unpack('>f', serialized_value)[0]
 
 
 class TransformGraph(Artifact):
